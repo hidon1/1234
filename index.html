@@ -99,6 +99,20 @@
         border: 1px solid var(--border);
       }
       .footer { text-align: center; margin-top: 18px; color: var(--muted); }
+
+      .oauth-divider {
+        display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--muted);
+      }
+      .oauth-divider::before, .oauth-divider::after {
+        content: ""; height: 1px; background: var(--border);
+      }
+      .google-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: #ffffff; color: #111827; border: 1px solid #e5e7eb;
+      }
+      .google-btn img {
+        width: 20px; height: 20px;
+      }
     </style>
   </head>
   <body>
@@ -124,6 +138,13 @@
             <input type="password" id="login-password" placeholder="סיסמה" required />
           </label>
           <button type="submit" class="primary">התחבר</button>
+          <div class="oauth-divider" style="margin-top:10px;">
+            <span>או</span>
+          </div>
+          <button type="button" id="google-login-btn" class="google-btn" style="margin-top:10px;">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+            התחבר עם Google
+          </button>
           <p class="hint">אין לך משתמש? עבור ללשונית "הרשמה".</p>
           <p id="login-error" class="error" role="alert"></p>
         </form>
@@ -170,39 +191,44 @@
       </section>
 
       <footer class="footer">
-        <p>האתר סטטי ומתחבר ל-Firebase (Auth + Firestore + Storage). ניתן לפרוס ב-GitHub Pages.</p>
+        <p>האתר סטטי ומתחבר ל-Firebase (Auth + Firestore + Storage + Analytics). ניתן לפרוס ב-GitHub Pages.</p>
       </footer>
     </main>
 
     <!-- קוד האפליקציה (מודול ES) -->
     <script type="module">
-      // טעינת Firebase SDK (מודולים) דרך CDN
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      // Firebase SDK v12.9.0 (מודולים) דרך CDN
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
       import {
         getAuth, onAuthStateChanged,
-        signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+        signInWithPopup, GoogleAuthProvider
+      } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
       import {
         getFirestore, collection, addDoc, doc, setDoc, deleteDoc,
         onSnapshot, query, orderBy, serverTimestamp
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
       import {
         getStorage, ref, uploadBytes, getDownloadURL, deleteObject
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+      } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-storage.js";
 
-      // עדכן כאן את הקונפיגורציה לאחר יצירת אפליקציית Web ב-Firebase Console
+      // קונפיגורציית Firebase שסיפקת
       const firebaseConfig = {
-    apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
-    authDomain: "project-2118807878810546832.firebaseapp.com",
-    projectId: "project-2118807878810546832",
-    storageBucket: "project-2118807878810546832.firebasestorage.app",
-    messagingSenderId: "519860367831",
-    appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
-    measurementId: "G-F5NEQP6X3Q"
+        apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
+        authDomain: "project-2118807878810546832.firebaseapp.com",
+        projectId: "project-2118807878810546832",
+        storageBucket: "project-2118807878810546832.firebasestorage.app",
+        messagingSenderId: "519860367831",
+        appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
+        measurementId: "G-F5NEQP6X3Q"
       };
 
       // אתחול Firebase
       const app = initializeApp(firebaseConfig);
+      // Analytics (רק בסביבה מאובטחת ובדפדפנים תומכים)
+      try { getAnalytics(app); } catch (e) { /* no-op אם לא זמין */ }
+
       const auth = getAuth(app);
       const db = getFirestore(app);
       const storage = getStorage(app);
@@ -221,6 +247,7 @@
       const registerPassword = document.getElementById("register-password");
       const loginError = document.getElementById("login-error");
       const registerError = document.getElementById("register-error");
+      const googleLoginBtn = document.getElementById("google-login-btn");
 
       const userEmailEl = document.getElementById("user-email");
       const signoutBtn = document.getElementById("signout-btn");
@@ -248,7 +275,7 @@
         registerError.textContent = "";
       });
 
-      // התחברות
+      // התחברות עם אימייל/סיסמה
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         loginError.textContent = "";
@@ -259,7 +286,19 @@
         }
       });
 
-      // הרשמה
+      // התחברות עם Google (Popup)
+      googleLoginBtn.addEventListener("click", async () => {
+        loginError.textContent = "";
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+        } catch (err) {
+          loginError.textContent = "שגיאה בהתחברות עם Google. נסה שוב.";
+          console.error(err);
+        }
+      });
+
+      // הרשמה עם אימייל/סיסמה
       registerForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         registerError.textContent = "";
@@ -439,7 +478,7 @@
         rowsContainer.prepend(row);
       });
 
-      // מאזין לרשומות של המשתמש (ב��מן אמת)
+      // מאזין לרשומות של המשתמש (בזמן אמת)
       function startEntriesListener(uid) {
         stopEntriesListener();
         const q = query(collection(db, "users", uid, "entries"), orderBy("createdAt", "desc"));
