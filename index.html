@@ -1,50 +1,82 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פתקים + התחברות גוגל (Redirect)</title>
-<style>body{font-family:system-ui;margin:2rem;max-width:720px}header{display:flex;gap:.5rem;align-items:center}form{margin:.75rem 0;display:flex;gap:.5rem}input{flex:1;padding:.5rem;border:1px solid #ccc;border-radius:6px}button{padding:.5rem .8rem;border:1px solid #999;border-radius:6px;background:#f7f7f7;cursor:pointer}ul{padding:0;list-style:none}li{padding:.4rem .6rem;border-bottom:1px solid #eee}#msg{color:#b00;margin-top:.5rem}</style></head>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>חיבור Firebase וגוגל</title>
+</head>
 <body>
-<header>
-  <button id="signin">התחברות עם גוגל</button>
-  <button id="signout" hidden>יציאה</button>
-  <strong id="user" hidden></strong>
-</header>
-<form id="form" hidden><input id="text" placeholder="הקלד שורה חדשה..."><button>הוסף</button></form>
-<div id="msg"></div>
-<ul id="list"></ul>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+    <h2>מערכת שמירת נתונים</h2>
+    
+    <button id="loginBtn">התחבר עם Google</button>
+    
+    <hr>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
-    authDomain: "project-2118807878810546832.web.app",
-    projectId: "project-2118807878810546832",
-    storageBucket: "project-2118807878810546832.firebasestorage.app",
-    messagingSenderId: "519860367831",
-    appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
-    measurementId: "G-F5NEQP6X3Q"
-  };
+    <div id="dataSection" style="display:none;">
+        <input type="text" id="userInput" placeholder="הקלד טקסט לשמירה">
+        <button id="saveBtn">שמור במסד הנתונים</button>
+        <p id="status"></p>
+    </div>
 
-  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), provider = new GoogleAuthProvider();
-  const $=id=>document.getElementById(id), signin=$("signin"), signoutB=$("signout"), userEl=$("user"), form=$("form"), input=$("text"), list=$("list"), msg=$("msg");
-  const showErr=e=>{console.error(e); msg.textContent=(e?.message||e||"שגיאה")};
+    <script type="module">
+        // ייבוא הפונקציות הנדרשות מ-Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  signin.onclick=()=>{ msg.textContent=""; signInWithRedirect(auth,provider).catch(showErr) };
-  getRedirectResult(auth).catch(showErr);
+        // הגדרות הפרויקט שלך (כפי שסיפקת)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
+            authDomain: "project-2118807878810546832.firebaseapp.com",
+            projectId: "project-2118807878810546832",
+            storageBucket: "project-2118807878810546832.firebasestorage.app",
+            messagingSenderId: "519860367831",
+            appId: "1:519860367831:web:488f364c2e51d27b6a5b92"
+        };
 
-  signoutB.onclick=()=>{msg.textContent="";signOut(auth).catch(showErr)};
+        // אתחול Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
-  let unsub=null;
-  onAuthStateChanged(auth, user=>{
-    const on=!!user; signin.hidden=on; signoutB.hidden=!on; form.hidden=!on; userEl.hidden=!on; list.innerHTML="";
-    if(on){
-      userEl.textContent=`מחובר: ${user.displayName||user.email}`;
-      const ref=collection(db,"users",user.uid,"notes");
-      unsub?.(); unsub=onSnapshot(query(ref,orderBy("ts","desc")),snap=>{
-        list.innerHTML=snap.docs.map(d=>`<li>${(d.data().text||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</li>`).join("");
-      }, showErr);
-      form.onsubmit=async e=>{e.preventDefault();const t=input.value.trim();if(!t)return;await addDoc(ref,{text:t,ts:serverTimestamp()}).catch(showErr);input.value=""};
-    }else{unsub?.();unsub=null;}
-  });
-</script>
-</body></html>
+        const loginBtn = document.getElementById('loginBtn');
+        const dataSection = document.getElementById('dataSection');
+        const saveBtn = document.getElementById('saveBtn');
+        const status = document.getElementById('status');
+
+        // פונקציית התחברות עם גוגל
+        loginBtn.onclick = async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                alert("שלום " + result.user.displayName);
+                loginBtn.style.display = 'none'; // הסתרת כפתור התחברות
+                dataSection.style.display = 'block'; // הצגת טופס השמירה
+            } catch (error) {
+                console.error("שגיאה בהתחברות:", error);
+            }
+        };
+
+        // פונקציית שמירת נתונים ל-Firestore
+        saveBtn.onclick = async () => {
+            const text = document.getElementById('userInput').value;
+            if (!text) return alert("נא להזין טקסט");
+
+            try {
+                // שמירה לאוסף שנקרא 'messages'
+                await addDoc(collection(db, "messages"), {
+                    content: text,
+                    userId: auth.currentUser.uid,
+                    userName: auth.currentUser.displayName,
+                    timestamp: new Date()
+                });
+                status.innerText = "הנתונים נשמרו בהצלחה!";
+                document.getElementById('userInput').value = "";
+            } catch (error) {
+                console.error("שגיאה בשמירה:", error);
+                status.innerText = "שגיאה: וודא שהגדרת הרשאות ב-Firebase Console";
+            }
+        };
+    </script>
+</body>
+</html>
