@@ -17,7 +17,7 @@
 
   const firebaseConfig = {
     apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
-    authDomain: "project-2118807878810546832.firebaseapp.com",
+    authDomain: "project-2118807878810546832.web.app",   // חשוב: web.app
     projectId: "project-2118807878810546832",
     storageBucket: "project-2118807878810546832.firebasestorage.app",
     messagingSenderId: "519860367831",
@@ -30,7 +30,7 @@
   const showErr=e=>{console.error(e); msg.textContent=(e?.message||e||"שגיאה")};
 
   signin.onclick=()=>{ msg.textContent=""; signInWithRedirect(auth,provider).catch(showErr) };
-  getRedirectResult(auth).catch(showErr); // לאחר חזרה מה-redirect, לדיבוג/שגיאות
+  getRedirectResult(auth).catch(showErr); // לאחר חזרה מה-redirect
 
   signoutB.onclick=()=>{msg.textContent="";signOut(auth).catch(showErr)};
 
