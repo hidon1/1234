@@ -2,29 +2,41 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>חיבור Firebase וגוגל</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת שמירת נתונים - Firebase & GitHub</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        #dataSection { margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        input { padding: 8px; width: 250px; margin-bottom: 10px; }
+        button { padding: 8px 15px; cursor: pointer; background-color: #4285f4; color: white; border: none; border-radius: 4px; }
+        button:hover { background-color: #357ae8; }
+        #status { color: green; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-    <h2>מערכת שמירת נתונים</h2>
+    <h2>חיבור פרויקט GitHub ל-Firebase</h2>
     
-    <button id="loginBtn">התחבר עם Google</button>
+    <div id="authSection">
+        <button id="loginBtn">התחבר עם חשבון Google</button>
+    </div>
     
-    <hr>
-
     <div id="dataSection" style="display:none;">
-        <input type="text" id="userInput" placeholder="הקלד טקסט לשמירה">
-        <button id="saveBtn">שמור במסד הנתונים</button>
+        <h3>ברוך הבא, <span id="userName"></span></h3>
+        <input type="text" id="userInput" placeholder="הכנס טקסט לשמירה בדאטהבייס">
+        <br>
+        <button id="saveBtn">שמור שורה ב-Firestore</button>
         <p id="status"></p>
+        <button id="logoutBtn" style="background-color: #888; margin-top: 10px;">התנתק</button>
     </div>
 
     <script type="module">
-        // ייבוא הפונקציות הנדרשות מ-Firebase
+        // ייבוא ה-SDK של Firebase מ-CDN
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // הגדרות הפרויקט שלך (כפי שסיפקת)
+        // הגדרות הפרויקט שלך
         const firebaseConfig = {
             apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
             authDomain: "project-2118807878810546832.firebaseapp.com",
@@ -40,41 +52,66 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // **התיקון החשוב עבור GitHub Pages:**
+        // אנחנו מכריחים את ה-Auth להשתמש בדומיין של פיירבייס כדי למנוע שגיאת 404
+        auth.config.authDomain = "project-2118807878810546832.firebaseapp.com";
+
+        // אלמנטים בדף
         const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
         const dataSection = document.getElementById('dataSection');
+        const authSection = document.getElementById('authSection');
+        const userNameSpan = document.getElementById('userName');
         const saveBtn = document.getElementById('saveBtn');
         const status = document.getElementById('status');
 
-        // פונקציית התחברות עם גוגל
+        // מעקב אחר מצב התחברות המשתמש
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // משתמש מחובר
+                authSection.style.display = 'none';
+                dataSection.style.display = 'block';
+                userNameSpan.innerText = user.displayName;
+            } else {
+                // משתמש מנותק
+                authSection.style.display = 'block';
+                dataSection.style.display = 'none';
+            }
+        });
+
+        // פונקציית התחברות
         loginBtn.onclick = async () => {
             try {
-                const result = await signInWithPopup(auth, provider);
-                alert("שלום " + result.user.displayName);
-                loginBtn.style.display = 'none'; // הסתרת כפתור התחברות
-                dataSection.style.display = 'block'; // הצגת טופס השמירה
+                await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("שגיאה בהתחברות:", error);
+                alert("שגיאה: " + error.message);
             }
         };
 
-        // פונקציית שמירת נתונים ל-Firestore
+        // פונקציית התנתקות
+        logoutBtn.onclick = () => signOut(auth);
+
+        // פונקציית שמירת נתונים
         saveBtn.onclick = async () => {
             const text = document.getElementById('userInput').value;
             if (!text) return alert("נא להזין טקסט");
 
+            status.innerText = "שומר...";
+            
             try {
-                // שמירה לאוסף שנקרא 'messages'
-                await addDoc(collection(db, "messages"), {
-                    content: text,
+                // הוספת מסמך לאוסף בשם 'user_data'
+                await addDoc(collection(db, "user_data"), {
+                    text: text,
                     userId: auth.currentUser.uid,
-                    userName: auth.currentUser.displayName,
-                    timestamp: new Date()
+                    userEmail: auth.currentUser.email,
+                    createdAt: serverTimestamp()
                 });
-                status.innerText = "הנתונים נשמרו בהצלחה!";
+                status.innerText = "השורה נשמרה בהצלחה ב-Firestore!";
                 document.getElementById('userInput').value = "";
             } catch (error) {
                 console.error("שגיאה בשמירה:", error);
-                status.innerText = "שגיאה: וודא שהגדרת הרשאות ב-Firebase Console";
+                status.innerText = "שגיאה בשמירה. בדוק את ה-Rules ב-Console.";
             }
         };
     </script>
