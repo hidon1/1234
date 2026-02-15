@@ -1,4 +1,4 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פתקים + התחברות גוגל</title>
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פתקים + התחברות גוגל (Redirect)</title>
 <style>body{font-family:system-ui;margin:2rem;max-width:720px}header{display:flex;gap:.5rem;align-items:center}form{margin:.75rem 0;display:flex;gap:.5rem}input{flex:1;padding:.5rem;border:1px solid #ccc;border-radius:6px}button{padding:.5rem .8rem;border:1px solid #999;border-radius:6px;background:#f7f7f7;cursor:pointer}ul{padding:0;list-style:none}li{padding:.4rem .6rem;border-bottom:1px solid #eee}#msg{color:#b00;margin-top:.5rem}</style></head>
 <body>
 <header>
@@ -12,7 +12,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -27,21 +27,10 @@
 
   const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), provider = new GoogleAuthProvider();
   const $=id=>document.getElementById(id), signin=$("signin"), signoutB=$("signout"), userEl=$("user"), form=$("form"), input=$("text"), list=$("list"), msg=$("msg");
+  const showErr=e=>{console.error(e); msg.textContent=(e?.message||e||"שגיאה")};
 
-  const showErr=e=>{console.error(e); msg.textContent=(e?.message||e||"שגיאת התחברות")};
-
-  signin.onclick=async ()=>{
-    msg.textContent="";
-    try{ await signInWithPopup(auth,provider); }
-    catch(e){
-      if(e.code==="auth/unauthorized-domain"){
-        msg.textContent="הוסף את hidon1.github.io ב-Firebase > Authentication > Authorized domains.";
-      }else if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){
-        await signInWithRedirect(auth,provider);
-      }else{ showErr(e); }
-    }
-  };
-  getRedirectResult(auth).catch(showErr);
+  signin.onclick=()=>{ msg.textContent=""; signInWithRedirect(auth,provider).catch(showErr) };
+  getRedirectResult(auth).catch(showErr); // לאחר חזרה מה-redirect, לדיבוג/שגיאות
 
   signoutB.onclick=()=>{msg.textContent="";signOut(auth).catch(showErr)};
 
