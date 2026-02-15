@@ -1,5 +1,5 @@
 <!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פתקים + התחברות גוגל</title>
-<style>body{font-family:system-ui;margin:2rem;max-width:720px}header{display:flex;gap:.5rem;align-items:center}form{margin:.75rem 0;display:flex;gap:.5rem}input{flex:1;padding:.5rem;border:1px solid #ccc;border-radius:6px}button{padding:.5rem .8rem;border:1px solid #999;border-radius:6px;background:#f7f7f7;cursor:pointer}ul{padding:0;list-style:none}li{padding:.4rem .6rem;border-bottom:1px solid #eee}</style></head>
+<style>body{font-family:system-ui;margin:2rem;max-width:720px}header{display:flex;gap:.5rem;align-items:center}form{margin:.75rem 0;display:flex;gap:.5rem}input{flex:1;padding:.5rem;border:1px solid #ccc;border-radius:6px}button{padding:.5rem .8rem;border:1px solid #999;border-radius:6px;background:#f7f7f7;cursor:pointer}ul{padding:0;list-style:none}li{padding:.4rem .6rem;border-bottom:1px solid #eee}#msg{color:#b00;margin-top:.5rem}</style></head>
 <body>
 <header>
   <button id="signin">התחברות עם גוגל</button>
@@ -7,11 +7,12 @@
   <strong id="user" hidden></strong>
 </header>
 <form id="form" hidden><input id="text" placeholder="הקלד שורה חדשה..."><button>הוסף</button></form>
+<div id="msg"></div>
 <ul id="list"></ul>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -25,10 +26,24 @@
   };
 
   const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), provider = new GoogleAuthProvider();
-  const $=id=>document.getElementById(id), signin=$("signin"), signoutB=$("signout"), userEl=$("user"), form=$("form"), input=$("text"), list=$("list");
+  const $=id=>document.getElementById(id), signin=$("signin"), signoutB=$("signout"), userEl=$("user"), form=$("form"), input=$("text"), list=$("list"), msg=$("msg");
 
-  signin.onclick=()=>signInWithPopup(auth,provider).catch(console.error);
-  signoutB.onclick=()=>signOut(auth).catch(console.error);
+  const showErr=e=>{console.error(e); msg.textContent=(e?.message||e||"שגיאת התחברות")};
+
+  signin.onclick=async ()=>{
+    msg.textContent="";
+    try{ await signInWithPopup(auth,provider); }
+    catch(e){
+      if(e.code==="auth/unauthorized-domain"){
+        msg.textContent="הוסף את hidon1.github.io ב-Firebase > Authentication > Authorized domains.";
+      }else if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){
+        await signInWithRedirect(auth,provider);
+      }else{ showErr(e); }
+    }
+  };
+  getRedirectResult(auth).catch(showErr);
+
+  signoutB.onclick=()=>{msg.textContent="";signOut(auth).catch(showErr)};
 
   let unsub=null;
   onAuthStateChanged(auth, user=>{
@@ -38,8 +53,8 @@
       const ref=collection(db,"users",user.uid,"notes");
       unsub?.(); unsub=onSnapshot(query(ref,orderBy("ts","desc")),snap=>{
         list.innerHTML=snap.docs.map(d=>`<li>${(d.data().text||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</li>`).join("");
-      });
-      form.onsubmit=async e=>{e.preventDefault();const t=input.value.trim();if(!t)return;await addDoc(ref,{text:t,ts:serverTimestamp()});input.value=""};
+      }, showErr);
+      form.onsubmit=async e=>{e.preventDefault();const t=input.value.trim();if(!t)return;await addDoc(ref,{text:t,ts:serverTimestamp()}).catch(showErr);input.value=""};
     }else{unsub?.();unsub=null;}
   });
 </script>
