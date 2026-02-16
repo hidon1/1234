@@ -15,15 +15,13 @@
     <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
-
- <!-- Firebase — מודולרית (v9+) -->
+<!-- Firebase — מודולרית (v9+) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
   import { getAuth } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
     authDomain: "project-2118807878810546832.firebaseapp.com",
@@ -34,18 +32,17 @@
     measurementId: "G-F5NEQP6X3Q"
   };
 
-  // Initialize Firebase (לרוץ פעם אחת בלבד)
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // דוגמאות שימוש מודולריות (לא חובה להפעיל, רק להדגים)
-  // import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-  // signInWithEmailAndPassword(auth, email, password).then(userCred => { ... });
+  // אם יש קוד שלא רץ בתוך אותו module ורוצה לגשת ל‑auth/ db — גלובליזציה:
+  window.firebaseApp = app;
+  window.auth = auth;
+  window.db = db;
 
-  // בדיקה מהירה שה‑config נטען
-  console.log("Firebase app options (modular):", app.options);
+  console.log("Firebase (modular) initialized:", app.options);
 </script>
     <style>
         :root {
