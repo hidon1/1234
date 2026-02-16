@@ -12,38 +12,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script> <!-- For advanced graphs -->
     <!-- Firebase compat SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
-<!-- Firebase — מודולרית (v9+) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
-    authDomain: "project-2118807878810546832.firebaseapp.com",
-    projectId: "project-2118807878810546832",
-    storageBucket: "project-2118807878810546832.firebasestorage.app",
-    messagingSenderId: "519860367831",
-    appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
-    measurementId: "G-F5NEQP6X3Q"
-  };
+    <script>
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
+        authDomain: "project-2118807878810546832.firebaseapp.com",
+        projectId: "project-2118807878810546832",
+        storageBucket: "project-2118807878810546832.firebasestorage.app",
+        messagingSenderId: "519860367831",
+        appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
+        measurementId: "G-F5NEQP6X3Q"
+      };
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+      // Initialize Firebase (run once)
+      const app = firebase.initializeApp(firebaseConfig);
+      if (firebase.analytics) {
+        try { firebase.analytics(); } catch (e) { console.warn('Analytics init failed', e); }
+      }
+      const auth = firebase.auth();
+      const db = firebase.firestore();
 
-  // אם יש קוד שלא רץ בתוך אותו module ורוצה לגשת ל‑auth/ db — גלובליזציה:
-  window.firebaseApp = app;
-  window.auth = auth;
-  window.db = db;
+      // Expose globals for non-module scripts
+      window.firebaseApp = app;
+      window.auth = auth;
+      window.db = db;
 
-  console.log("Firebase (modular) initialized:", app.options);
-</script>
+      console.log('Firebase (compat) initialized:', firebase.app().options);
+    </script>
     <style>
         :root {
             --primary-color: #8B0000;
