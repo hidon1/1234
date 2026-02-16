@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>רשימת שורות נשמרת</title>
+  <title>רשימת שורות בענן - Firebase</title>
   <style>
-    :root { --gap: 0.6rem; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    :root { --gap: 0.6rem; font-family: system-ui, -apple-system, sans-serif; }
     body { padding: 2rem; direction: rtl; background: #fafafa; color:#111; }
     .wrap { max-width:700px; margin:0 auto; background:white; padding:1.2rem; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
     h1 { margin:0 0 1rem 0; font-size:1.2rem; }
@@ -17,174 +17,144 @@
     li { display:flex; gap:.5rem; align-items:center; padding:.5rem; border-radius:8px; border:1px solid #eee; background: #fff; }
     .text { flex:1; word-break:break-word; padding-right:.25rem; }
     .meta { color:#666; font-size:.85rem; margin-left:.5rem; }
-    .empty { color:#777; padding:.8rem; text-align:center; }
-    .small { font-size:.85rem; color:#666; }
+    .auth-box { margin-bottom: 1rem; padding: 1rem; border-bottom: 1px solid #eee; text-align: center; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="שורת טקסט נשמרת">
-    <h1>הוסף שורה — הרשימה נשמרת אוטומטית</h1>
 
-    <div class="controls">
-      <input id="lineInput" type="text" placeholder="הקלד כאן שורה חדשה ואז לחץ הוסף או Enter" autocomplete="off" />
-      <button id="addBtn" class="primary">הוסף</button>
-      <button id="clearAllBtn" title="נקה את כל הרשימה">נקה הכל</button>
+  <div class="wrap">
+    <div id="authSection" class="auth-box">
+      <p id="userStatus">טוען...</p>
+      <button id="loginBtn" class="primary hidden">התחבר עם Google</button>
+      <button id="logoutBtn" class="hidden">התנתק</button>
     </div>
 
-    <div class="small">ניתן למחוק שורה באמצעות כפתור ה-X משמאל.</div>
+    <div id="mainApp" class="hidden">
+      <h1>השורות שלי בענן</h1>
+      <div class="controls">
+        <input id="lineInput" type="text" placeholder="הקלד שורה חדשה..." />
+        <button id="addBtn" class="primary">הוסף</button>
+      </div>
 
-    <ul id="list" aria-live="polite"></ul>
-    <div id="empty" class="empty" hidden>אין שורות עדיין.</div>
-
-    <div style="margin-top:.8rem; display:flex; gap:.5rem;">
-      <button id="exportBtn">העתק את כל הרשימה ללוח</button>
-      <button id="importBtn">ייבא רשימת דוגמה</button>
+      <ul id="list"></ul>
+      <div id="empty" style="text-align:center; padding:1rem; color:#777;">אין שורות עדיין.</div>
+      
+      <div style="margin-top:1rem;">
+        <button id="exportBtn">העתק הכל ללוח</button>
+      </div>
     </div>
   </div>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyB-yEX8EutF_Ds6sLaFSdToWRqnM2shUUc",
-    authDomain: "project-124056294089354005.firebaseapp.com",
-    projectId: "project-124056294089354005",
-    storageBucket: "project-124056294089354005.firebasestorage.app",
-    messagingSenderId: "566837476259",
-    appId: "1:566837476259:web:c3fc8ea1943653fdd2b816",
-    measurementId: "G-5D0K55650J"
-  };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-  <script>
-    const STORAGE_KEY = 'savedLines_v1';
-    const input = document.getElementById('lineInput');
-    const addBtn = document.getElementById('addBtn');
+    // הגדרות הפרויקט שלך
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-yEX8EutF_Ds6sLaFSdToWRqnM2shUUc",
+      authDomain: "project-124056294089354005.firebaseapp.com",
+      projectId: "project-124056294089354005",
+      storageBucket: "project-124056294089354005.firebasestorage.app",
+      messagingSenderId: "566837476259",
+      appId: "1:566837476259:web:c3fc8ea1943653fdd2b816"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let lines = [];
+    let unsubscribe = null;
+
+    // אלמנטים
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userStatus = document.getElementById('userStatus');
+    const mainApp = document.getElementById('mainApp');
     const listEl = document.getElementById('list');
-    const emptyEl = document.getElementById('empty');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const importBtn = document.getElementById('importBtn');
+    const input = document.getElementById('lineInput');
 
-    // טעינת רשימה מ-localStorage
-    let lines = load();
-
-    function load() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) {
-        console.error('Failed to load:', e);
-        return [];
+    // ניהול מצב משתמש
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userStatus.textContent = `שלום, ${user.displayName}`;
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+        mainApp.classList.remove('hidden');
+        startListening(user.uid);
+      } else {
+        userStatus.textContent = "יש להתחבר כדי לשמור נתונים";
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        mainApp.classList.add('hidden');
+        if (unsubscribe) unsubscribe();
+        render([]);
       }
+    });
+
+    // כניסה ויציאה
+    loginBtn.onclick = () => signInWithPopup(auth, provider);
+    logoutBtn.onclick = () => signOut(auth);
+
+    // האזנה לנתונים מ-Firestore
+    function startListening(uid) {
+      const q = query(
+        collection(db, "lines"), 
+        where("userId", "==", uid),
+        orderBy("ts", "asc")
+      );
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        lines = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        render(lines);
+      });
     }
 
-    function save() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
-      } catch (e) {
-        console.error('Failed to save:', e);
-      }
+    // הוספת שורה
+    async function addLine() {
+      const text = input.value.trim();
+      if (!text || !auth.currentUser) return;
+      
+      await addDoc(collection(db, "lines"), {
+        text: text,
+        userId: auth.currentUser.uid,
+        ts: Date.now()
+      });
+      input.value = '';
     }
 
-    function render() {
+    document.getElementById('addBtn').onclick = addLine;
+    input.onkeydown = (e) => { if(e.key === 'Enter') addLine(); };
+
+    // מחיקת שורה
+    window.deleteLine = async (id) => {
+      await deleteDoc(doc(db, "lines", id));
+    };
+
+    // רינדור רשימה
+    function render(data) {
       listEl.innerHTML = '';
-      if (!lines.length) {
-        emptyEl.hidden = false;
-        return;
-      }
-      emptyEl.hidden = true;
-      // הצגת פריטים בסדר הוספה (חדשים למטה). אם רוצים הפוך - שנה את המיון
-      lines.forEach(item => {
+      document.getElementById('empty').style.display = data.length ? 'none' : 'block';
+      
+      data.forEach(item => {
         const li = document.createElement('li');
-
-        const txt = document.createElement('div');
-        txt.className = 'text';
-        txt.textContent = item.text;
-
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        const d = new Date(item.ts);
-        meta.textContent = d.toLocaleString('he-IL');
-
-        const del = document.createElement('button');
-        del.title = 'מחק שורה';
-        del.innerHTML = '✖';
-        del.addEventListener('click', () => {
-          lines = lines.filter(x => x.id !== item.id);
-          save();
-          render();
-        });
-
-        li.appendChild(del);
-        li.appendChild(txt);
-        li.appendChild(meta);
+        li.innerHTML = `
+          <button onclick="deleteLine('${item.id}')">✖</button>
+          <div class="text">${item.text}</div>
+          <div class="meta">${new Date(item.ts).toLocaleTimeString('he-IL')}</div>
+        `;
         listEl.appendChild(li);
       });
     }
 
-    function addLine(text) {
-      const trimmed = (text || '').trim();
-      if (!trimmed) return;
-      const item = { id: Date.now().toString() + Math.random().toString(36).slice(2), text: trimmed, ts: Date.now() };
-      lines.push(item);
-      save();
-      render();
-    }
-
-    // אירועים
-    addBtn.addEventListener('click', () => {
-      addLine(input.value);
-      input.value = '';
-      input.focus();
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addBtn.click();
-      }
-    });
-
-    clearAllBtn.addEventListener('click', () => {
-      if (!confirm('למחוק את כל השורות?')) return;
-      lines = [];
-      save();
-      render();
-    });
-
-    exportBtn.addEventListener('click', async () => {
+    // העתקה
+    document.getElementById('exportBtn').onclick = () => {
       const text = lines.map(l => l.text).join('\n');
-      try {
-        await navigator.clipboard.writeText(text);
-        alert('העתקתי את כל הרשימה ללוח.');
-      } catch (e) {
-        // גיבוי: הצגת הטקסט להעתקה ידנית
-        prompt('העתק את הטקסט מכאן:', text);
-      }
-    });
-
-    // דוגמה לייבוא מהיר (לא הכרחי) — מוסיף כמה שורות דמו
-    importBtn.addEventListener('click', () => {
-      const sample = ['שורה ראשונה', 'עוד שורה', 'משהו רנדומלי'].map(t => ({ id: Date.now().toString() + Math.random().toString(36).slice(2), text: t, ts: Date.now() }));
-      lines = lines.concat(sample);
-      save();
-      render();
-    });
-
-    // רנדר התחלי
-    render();
-
-    // שמירה נוספת לפני עזיבת העמוד (מקרה קצה)
-    window.addEventListener('beforeunload', () => save());
+      navigator.clipboard.writeText(text).then(() => alert('הועתק!'));
+    };
   </script>
 </body>
 </html>
