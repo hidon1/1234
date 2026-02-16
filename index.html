@@ -51,7 +51,6 @@
     import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // הגדרות הפרויקט
     const firebaseConfig = {
       apiKey: "AIzaSyB-yEX8EutF_Ds6sLaFSdToWRqnM2shUUc",
       authDomain: "project-124056294089354005.firebaseapp.com",
@@ -61,13 +60,13 @@
       appId: "1:566837476259:web:c3fc8ea1943653fdd2b816"
     };
 
-    // אתחול
+    // אתחול פיירבייס
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // אלמנטים
+    // הגדרת אלמנטים (חייב לקרות כאן לפני השימוש)
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userStatus = document.getElementById('userStatus');
@@ -96,7 +95,7 @@
       }
     });
 
-    // כפתורי התחברות והתנתקות בשיטת Redirect
+    // כפתורי התחברות בשיטת Redirect - ללא רווחים בכתובת
     loginBtn.onclick = () => signInWithRedirect(auth, provider);
     logoutBtn.onclick = () => signOut(auth);
 
