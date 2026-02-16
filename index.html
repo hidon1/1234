@@ -32,7 +32,7 @@
       // Initialize Firebase (run once)
       const app = firebase.initializeApp(firebaseConfig);
       if (firebase.analytics) {
-        try { firebase.analytics(); } catch (e) { console.warn('Analytics init failed', e); }
+        try { firebase.analytics(); } catch (e) { console.warn('Analytics init failed:', e); }
       }
       const auth = firebase.auth();
       const db = firebase.firestore();
