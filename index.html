@@ -47,11 +47,11 @@
   </div>
 
   <script type="module">
-    // ייבוא מודולים - כולל שימוש ב-Redirect
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // הגדרות הפרויקט
     const firebaseConfig = {
       apiKey: "AIzaSyB-yEX8EutF_Ds6sLaFSdToWRqnM2shUUc",
       authDomain: "project-124056294089354005.firebaseapp.com",
@@ -61,13 +61,13 @@
       appId: "1:566837476259:web:c3fc8ea1943653fdd2b816"
     };
 
-    // אתחול פיירבייס
+    // אתחול
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // הגדרת אלמנטים (חייב להופיע לפני השימוש בהם)
+    // אלמנטים
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userStatus = document.getElementById('userStatus');
@@ -96,58 +96,35 @@
       }
     });
 
-    // כניסה ויציאה בשיטת Redirect לעקיפת חסימות
+    // כפתורי התחברות והתנתקות בשיטת Redirect
     loginBtn.onclick = () => signInWithRedirect(auth, provider);
     logoutBtn.onclick = () => signOut(auth);
 
-    // האזנה לנתונים
     function startListening(uid) {
-      const q = query(
-        collection(db, "lines"), 
-        where("userId", "==", uid),
-        orderBy("ts", "asc")
-      );
-
+      const q = query(collection(db, "lines"), where("userId", "==", uid), orderBy("ts", "asc"));
       unsubscribe = onSnapshot(q, (snapshot) => {
         lines = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         render(lines);
-      }, (error) => {
-        console.error("Firestore error:", error);
       });
     }
 
-    // הוספת שורה
     async function addLine() {
       const text = input.value.trim();
       if (!text || !auth.currentUser) return;
-      
-      try {
-        await addDoc(collection(db, "lines"), {
-          text: text,
-          userId: auth.currentUser.uid,
-          ts: Date.now()
-        });
-        input.value = '';
-      } catch (e) {
-        alert("שגיאה בשמירה: וודא שהגדרת חוקי אבטחה ב-Firestore");
-      }
+      await addDoc(collection(db, "lines"), { text, userId: auth.currentUser.uid, ts: Date.now() });
+      input.value = '';
     }
 
     document.getElementById('addBtn').onclick = addLine;
     input.onkeydown = (e) => { if(e.key === 'Enter') addLine(); };
 
-    // פונקציית מחיקה גלובלית
-    window.deleteLine = async (id) => {
-      if (confirm("למחוק שורה זו?")) {
-        await deleteDoc(doc(db, "lines", id));
-      }
+    window.deleteLine = async (id) => { 
+      if(confirm('למחוק שורה זו?')) await deleteDoc(doc(db, "lines", id)); 
     };
 
-    // רינדור
     function render(data) {
       listEl.innerHTML = '';
       document.getElementById('empty').style.display = data.length ? 'none' : 'block';
-      
       data.forEach(item => {
         const li = document.createElement('li');
         li.innerHTML = `
@@ -161,7 +138,7 @@
 
     document.getElementById('exportBtn').onclick = () => {
       const text = lines.map(l => l.text).join('\n');
-      navigator.clipboard.writeText(text).then(() => alert('הועתק!'));
+      navigator.clipboard.writeText(text).then(() => alert('הועתק ללוח!'));
     };
   </script>
 </body>
