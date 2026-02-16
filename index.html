@@ -48,7 +48,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -66,7 +66,7 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // הגדרת אלמנטים (חייב לקרות כאן לפני השימוש)
+    // הגדרת אלמנטים
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userStatus = document.getElementById('userStatus');
@@ -95,8 +95,16 @@
       }
     });
 
-    // כפתורי התחברות בשיטת Redirect - ללא רווחים בכתובת
-    loginBtn.onclick = () => signInWithRedirect(auth, provider);
+    // כפתורי התחברות - signInWithPopup (עובד טוב ב-GitHub Pages)
+    loginBtn.onclick = async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("שגיאת התחברות:", error);
+        alert("שגיאה בהתחברות. נסה שוב.");
+      }
+    };
+
     logoutBtn.onclick = () => signOut(auth);
 
     function startListening(uid) {
@@ -110,15 +118,27 @@
     async function addLine() {
       const text = input.value.trim();
       if (!text || !auth.currentUser) return;
-      await addDoc(collection(db, "lines"), { text, userId: auth.currentUser.uid, ts: Date.now() });
-      input.value = '';
+      try {
+        await addDoc(collection(db, "lines"), { text, userId: auth.currentUser.uid, ts: Date.now() });
+        input.value = '';
+      } catch (error) {
+        console.error("שגיאה בהוספת שורה:", error);
+        alert("שגיאה בהוספת השורה.");
+      }
     }
 
     document.getElementById('addBtn').onclick = addLine;
     input.onkeydown = (e) => { if(e.key === 'Enter') addLine(); };
 
     window.deleteLine = async (id) => { 
-      if(confirm('למחוק שורה זו?')) await deleteDoc(doc(db, "lines", id)); 
+      if(confirm('למחוק שורה זו?')) {
+        try {
+          await deleteDoc(doc(db, "lines", id));
+        } catch (error) {
+          console.error("שגיאה במחיקת שורה:", error);
+          alert("שגיאה במחיקת השורה.");
+        }
+      }
     };
 
     function render(data) {
