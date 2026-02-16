@@ -16,23 +16,37 @@
     <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
 
-    <!-- אתחול Firebase (פעם אחת בלבד) -->
-    <script>
-     const firebaseConfig = {
-  apiKey: "AIzaSyC8hWZ5XJGBQZx32m3VkL4JwPFe90qZAdQ",
-  authDomain: "wine-d0c2c.firebaseapp.com",
-  projectId: "wine-d0c2c",
-  storageBucket: "wine-d0c2c.firebasestorage.app",
-  messagingSenderId: "659709195708",
-  appId: "1:659709195708:web:39b401c67d31206b4667b9",
-  measurementId: "G-25Q2F6G9QC"
-      };
+ <!-- Firebase — מודולרית (v9+) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
-      const db = firebase.firestore();
-    </script>
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRXyTlTe9u9bjvL6Y3eUnztesa27hkWaY",
+    authDomain: "project-2118807878810546832.firebaseapp.com",
+    projectId: "project-2118807878810546832",
+    storageBucket: "project-2118807878810546832.firebasestorage.app",
+    messagingSenderId: "519860367831",
+    appId: "1:519860367831:web:488f364c2e51d27b6a5b92",
+    measurementId: "G-F5NEQP6X3Q"
+  };
 
+  // Initialize Firebase (לרוץ פעם אחת בלבד)
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // דוגמאות שימוש מודולריות (לא חובה להפעיל, רק להדגים)
+  // import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  // signInWithEmailAndPassword(auth, email, password).then(userCred => { ... });
+
+  // בדיקה מהירה שה‑config נטען
+  console.log("Firebase app options (modular):", app.options);
+</script>
     <style>
         :root {
             --primary-color: #8B0000;
